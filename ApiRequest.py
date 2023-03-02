@@ -1,6 +1,7 @@
 import requests
 import json
 import csv
+import time
 
 
 class ApiRequest:
@@ -9,6 +10,9 @@ class ApiRequest:
         self.hubPath = ""
         self.userName = "null"
         self.apiPassword = "null"
+        self.jwtToken = ""
+        self.tokenCreationTime = time.time()
+        self.tokenValidationTime = 3600
 
         # Open CSV and import api url, username and password
         with open('conf.csv', mode='r') as file:
@@ -26,10 +30,12 @@ class ApiRequest:
             self.userName = row[0]
             self.apiPassword = row[1]
 
-    def helloWorld(self):
-        # simple get request
-        response = requests.get('https://finalworkapi.azurewebsites.net/api/user/helloworld')
-        print(response.text)
+    def checkTokenValidation(self):
+
+        if (time.time() - self.tokenCreationTime) < self.tokenValidationTime:
+            return True
+        else:
+            return False
 
     def login(self):
         # Get request with a json body with the username and password of the raspberry pi
@@ -41,43 +47,51 @@ class ApiRequest:
         jwtToken = "null"
         if response.status_code == 200:
             json_response = response.json()
-            jwtToken = json_response.get('jwtToken')
-            return jwtToken
+            self.jwtToken = json_response.get('jwtToken')
+            self.tokenCreationTime = time.time()
+            return self.jwtToken
         else:
             print('Request failed with status code', response.status_code)
             return jwtToken
 
-    def updateHubReceiveVideoStream(self, jwt_token="", camera_id=0, status=True):
-        headers = {"Authorization": "Bearer " + jwt_token}
-        response = requests.post(self.apiUrl + self.hubPath + "/update/UpdateHubReceiveVideoStream?cameraId=" + str(
-            camera_id) + "&hubReceiveVideoStream=" + str(status), headers=headers)
+    def updateHubReceiveVideoStream(self, camera_id=0, status=True):
+        if self.checkTokenValidation():
+            headers = {"Authorization": "Bearer " + self.jwtToken}
+            response = requests.post(self.apiUrl + self.hubPath + "/update/UpdateHubReceiveVideoStream?cameraId=" + str(
+                camera_id) + "&hubReceiveVideoStream=" + str(status), headers=headers)
 
-        if response.status_code == 200:
-            print(response.text)
-            return True
+            if response.status_code == 200:
+                print(response.text)
+                return True
+            else:
+                print('Request failed with status code', response.status_code)
+                return False
         else:
-            print('Request failed with status code', response.status_code)
-            return False
+            self.login()
 
-    def getSystemState(self, jwt_token=""):
-        headers = {"Authorization": "Bearer " + jwt_token}
-        response = requests.get(self.apiUrl + self.hubPath + "/getSystemState", headers=headers)
+    def getSystemState(self):
+        if self.checkTokenValidation():
+            headers = {"Authorization": "Bearer " + self.jwtToken}
+            response = requests.get(self.apiUrl + self.hubPath + "/getSystemState", headers=headers)
 
-        status = SystemState()
+            status = SystemState()
 
-        if response.status_code == 200:
-            json_response = response.json()
-            status.sys_state = json_response.get('SysState')
-            status.deviceHasUser = json_response.get('DeviceHasUser')
+            if response.status_code == 200:
+                json_response = response.json()
+                print(json_response)
+                status.sysState = json_response.get('SysState')
+                status.deviceHasUser = json_response.get('DeviceHasUser')
 
-            for camera in json_response.get('Cameras'):
-                cameraObject = Camera(camera["CameraId"], camera["LocalIp"], camera["TransmitVideoStream"],
-                                      camera["HubReceiveVideoStream"])
-                status.cameras.append(cameraObject)
+                for camera in json_response.get('Cameras'):
+                    cameraObject = Camera(camera["CameraId"], camera["LocalIp"], camera["TransmitVideoStream"],
+                                          camera["HubReceiveVideoStream"])
+                    status.cameras.append(cameraObject)
+            else:
+                print('Request failed with status code', response.status_code)
+
+            return status
         else:
-            print('Request failed with status code', response.status_code)
-
-        return status
+            self.login()
 
 
 class SystemState:
