@@ -84,7 +84,7 @@ class ApiRequest:
 
                 for camera in json_response.get('Cameras'):
                     cameraObject = Camera(camera["CameraId"], camera["LocalIp"], camera["TransmitVideoStream"],
-                                          camera["HubReceiveVideoStream"])
+                                          camera["HubReceiveVideoStream"], camera["SrtServerIp"], camera["SrtServerPort"])
                     status.cameras.append(cameraObject)
             else:
                 print('Request failed with status code', response.status_code)
@@ -112,9 +112,13 @@ class Camera:
     localIp = ""
     transmitVideoStream = False
     hubReceiveVideoStream = False
+    srtServerIp = "0.0.0.0"
+    srtServerPort = 0
 
-    def __init__(self, camera_id, local_ip, transmit_video_stream, hub_receive_video_stream):
+    def __init__(self, camera_id, local_ip, transmit_video_stream, hub_receive_video_stream, srt_server_ip, srt_server_port):
         self.cameraId = camera_id
         self.localIp = local_ip
         self.transmitVideoStream = transmit_video_stream
         self.hubReceiveVideoStream = hub_receive_video_stream
+        self.srtServerIp = srt_server_ip
+        self.srtServerPort = srt_server_port

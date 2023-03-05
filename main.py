@@ -24,21 +24,24 @@ popen_list = []
 
 
 def stream_camera(camera):
-    ffmpeg_command = [
-        'ffmpeg',
-        '-i', 'rtsp://' + camera.localIp + ':8554/mjpeg/1',
-        '-pix_fmt', 'yuv420p',
-        '-c:v', 'libx264',
-        '-r', '30',
-        '-b:v', '1000k',
-        '-f', 'mpegts',
-        'srt://192.168.1.32:40005'
-    ]
-    p = subprocess.Popen(ffmpeg_command)
-    popen_list.append(p)
-    camera.process = p
-    p.wait()
-    apiRequest.updateHubReceiveVideoStream(camera.cameraId, False)
+    try:
+        ffmpeg_command = [
+            'ffmpeg',
+            '-i', 'rtsp://' + camera.localIp + ':8554/mjpeg/1',
+            '-pix_fmt', 'yuv420p',
+            '-c:v', 'libx264',
+            '-r', '30',
+            '-b:v', '1000k',
+            '-f', 'mpegts',
+            'srt://'+camera.srtServerIp+':'+str(camera.srtServerPort)
+        ]
+        p = subprocess.Popen(ffmpeg_command)
+        popen_list.append(p)
+        camera.process = p
+        p.wait()
+        apiRequest.updateHubReceiveVideoStream(camera.cameraId, False)
+    except:
+       print("Connection to the Srt server failed")
 
 
 if __name__ == "__main__":
@@ -107,6 +110,5 @@ if __name__ == "__main__":
 
                     threads = []
             time.sleep(3)
-        print("Hello Belgium")
     else:
         print("Unable to authenticate")
