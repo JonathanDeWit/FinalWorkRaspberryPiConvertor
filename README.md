@@ -19,6 +19,9 @@ When I wrote this program, the default installation of FFmpeg was not enough to 
 
 Its also important to mention that you will need to install Python 3.9 or higher.
 
+The domain name and path of the API request are stored in ‘conf.csv’ if you want to change it feel free to edit this file.
+The username and password of the SrtServer user are stored in ‘profile.csv’ if you want to change it feel free to edit this file. 
+
 
  ## Primary features
  - Convert a RTSP live video signal into a SRT live video signal
